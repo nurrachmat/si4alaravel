@@ -74,8 +74,15 @@ class ProdiController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Prodi $prodi)
+    public function destroy($prodi)
     {
-        //
+        $prodi = Prodi::findOrFail($prodi);
+        // dd($prodi);
+
+        // hapus data prodi
+        $prodi->delete();
+
+        // redirect ke route prodi.index
+        return redirect()->route('prodi.index')->with('success', 'Program studi berhasil dihapus.');
     }
 }

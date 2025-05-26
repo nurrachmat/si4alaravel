@@ -83,8 +83,23 @@ class MahasiswaController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Mahasiswa $mahasiswa)
+    public function destroy($mahasiswa)
     {
-        //
+        $mahasiswa = Mahasiswa::findOrFail($mahasiswa);
+        // dd($mahasiswa);
+
+        // hapus foto jika ada
+        if ($mahasiswa->foto) {
+            $fotoPath = public_path('images/' . $mahasiswa->foto);
+            if (file_exists($fotoPath)) {
+                unlink($fotoPath); // hapus file foto
+            }
+        }
+
+        // hapus data mahasiswa
+        $mahasiswa->delete();
+
+        // redirect ke route mahasiswa.index
+        return redirect()->route('mahasiswa.index')->with('success', 'Mahasiswa berhasil dihapus.');
     }
 }
