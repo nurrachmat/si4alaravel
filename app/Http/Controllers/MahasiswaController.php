@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Mahasiswa;
 use App\Models\Prodi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class MahasiswaController extends Controller
 {
@@ -44,10 +45,37 @@ class MahasiswaController extends Controller
         ]);
         // upload foto
         if ($request->hasFile('foto')) {
-            $file = $request->file('foto'); // ambil file foto
-            $filename = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('images'), $filename); // simpan foto ke folder public/images
-            $input['foto'] = $filename; // simpan nama file baru ke $input
+            // $file = $request->file('foto'); // ambil file foto
+            // $filename = time() . '.' . $file->getClientOriginalExtension();
+            // $file->move(public_path('images'), $filename); // simpan foto ke folder public/images
+            // $input['foto'] = $filename; // simpan nama file baru ke $input
+
+            try {
+                $file = $request->file('foto');
+                $response = Http::asMultipart()->post(
+                    'https://api.cloudinary.com/v1_1/' . env('CLOUDINARY_CLOUD_NAME') . '/image/upload',
+                    [
+                        [
+                            'name'     => 'file',
+                            'contents' => fopen($file->getRealPath(), 'r'),
+                            'filename' => $file->getClientOriginalName(),
+                        ],
+                        [
+                            'name'     => 'upload_preset',
+                            'contents' => env('CLOUDINARY_UPLOAD_PRESET'),
+                        ],
+                    ]
+                );
+
+                $result = $response->json();
+                if (isset($result['secure_url'])) {
+                    $input['foto'] = $result['secure_url'];
+                } else {
+                    return back()->withErrors(['foto' => 'Cloudinary upload error: ' . ($result['error']['message'] ?? 'Unknown error')]);
+                }
+            } catch (\Exception $e) {
+                return back()->withErrors(['foto' => 'Cloudinary error: ' . $e->getMessage()]);
+            }
         }
         // simpan data ke tabel mahasiswa
         Mahasiswa::create($input);
